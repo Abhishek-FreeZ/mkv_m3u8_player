@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VideoStream Pro - Upload</title>
+  <link href="https://vjs.zencdn.net/7.14.3/video-js.min.css" rel="stylesheet">
+  <script src="https://vjs.zencdn.net/7.14.3/video.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-logo">
+        <a href="index.html">🎬 VideoStream Pro</a>
+      </div>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="index.html" class="nav-link">Home</a>
+        </li>
+        <li class="nav-item">
+          <a href="library.html" class="nav-link">Library</a>
+        </li>
+        <li class="nav-item">
+          <a href="upload.html" class="nav-link active">Upload</a>
+        </li>
+      </ul>
+      <div class="hamburger">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title">Upload Video</h1>
+        <p class="page-subtitle">Upload your MKV files for streaming</p>
+      </div>
+
+      <div class="upload-section">
+        <form id="uploadForm" enctype="multipart/form-data" class="upload-form">
+          <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <h3>Drop your MKV file here</h3>
+            <p>or <span class="upload-link">browse files</span></p>
+            <input type="file" name="video" id="fileInput" accept=".mkv" required hidden />
+          </div>
+
+          <div id="fileInfo" class="file-info" style="display: none;">
+            <div class="file-details">
+              <span class="file-name" id="fileName"></span>
+              <span class="file-size" id="fileSize"></span>
+            </div>
+            <button type="button" class="btn-remove" onclick="removeFile()">✕</button>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="uploadBtn" disabled>
+              Upload Video
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="removeFile()">
+              Clear
+            </button>
+          </div>
+        </form>
+
+        <div id="progressSection" class="progress-section" style="display: none;">
+          <div class="progress-header">
+            <h3>Uploading...</h3>
+            <span id="progressPercent">0%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="progress-info">
+            <span id="progressStatus">Preparing upload...</span>
+          </div>
+        </div>
+
+        <div id="successSection" class="success-section" style="display: none;">
+          <div class="success-icon">✅</div>
+          <h3>Upload Successful!</h3>
+          <p>Your video has been processed and is ready to stream.</p>
+          <div class="success-actions">
+            <button class="btn btn-primary" onclick="playUploadedVideo()">Play Now</button>
+            <a href="library.html" class="btn btn-secondary">Go to Library</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="upload-tips">
+        <h3>Upload Tips</h3>
+        <ul>
+          <li>Supported format: MKV files only</li>
+          <li>Maximum file size: Depends on your server configuration</li>
+          <li>Videos are automatically converted to HLS format for streaming</li>
+          <li>Processing time varies based on file size and complexity</li>
+        </ul>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&copy; 2024 VideoStream Pro. Built with Video.js</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+    let uploadedVideoInfo = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setupUploadForm();
+    });
+
+    function setupUploadForm() {
+      const form = document.getElementById('uploadForm');
+      const fileInput = document.getElementById('fileInput');
+      const uploadArea = document.getElementById('uploadArea');
+      const uploadBtn = document.getElementById('uploadBtn');
+
+      // File input change
+      fileInput.addEventListener('change', handleFileSelect);
+
+      // Drag and drop
+      uploadArea.addEventListener('click', () => fileInput.click());
+      uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('drag-over');
+      });
+      uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('drag-over');
+      });
+      uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          fileInput.files = files;
+          handleFileSelect();
+        }
+      });
+
+      // Form submit
+      form.addEventListener('submit', handleFormSubmit);
+    }
+
+    function handleFileSelect() {
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput.files[0];
+      
+      if (file) {
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = formatFileSize(file.size);
+        document.getElementById('fileInfo').style.display = 'flex';
+        document.getElementById('uploadBtn').disabled = false;
+        document.getElementById('uploadArea').style.display = 'none';
+      }
+    }
+
+    function removeFile() {
+      document.getElementById('fileInput').value = '';
+      document.getElementById('fileInfo').style.display = 'none';
+      document.getElementById('uploadBtn').disabled = true;
+      document.getElementById('uploadArea').style.display = 'flex';
+      hideAllSections();
+    }
+
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(e.target);
+      const xhr = new XMLHttpRequest();
+      
+      showProgressSection();
+      
+      xhr.open('POST', '/upload', true);
+      
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round(e.loaded / e.total * 100);
+          updateProgress(percent, 'Uploading...');
+        }
+      });
+      
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          uploadedVideoInfo = response;
+          showSuccessSection();
+        } else {
+          showError('Upload failed. Please try again.');
+        }
+      });
+      
+      xhr.addEventListener('error', () => {
+        showError('Upload failed. Please check your connection.');
+      });
+      
+      xhr.send(formData);
+    }
+
+    function showProgressSection() {
+      hideAllSections();
+      document.getElementById('progressSection').style.display = 'block';
+    }
+
+    function showSuccessSection() {
+      hideAllSections();
+      document.getElementById('successSection').style.display = 'block';
+    }
+
+    function hideAllSections() {
+      document.getElementById('progressSection').style.display = 'none';
+      document.getElementById('successSection').style.display = 'none';
+    }
+
+    function updateProgress(percent, status) {
+      document.getElementById('progressPercent').textContent = percent + '%';
+      document.getElementById('progressFill').style.width = percent + '%';
+      document.getElementById('progressStatus').textContent = status;
+    }
+
+    function showError(message) {
+      hideAllSections();
+      alert(message); // In a real app, you'd show a better error UI
+      removeFile();
+    }
+
+    function playUploadedVideo() {
+      if (uploadedVideoInfo) {
+        sessionStorage.setItem('currentVideo', JSON.stringify({
+          url: uploadedVideoInfo.streamUrl,
+          name: uploadedVideoInfo.name || 'Uploaded Video'
+        }));
+        window.location.href = 'player.html';
+      }
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+  </script>
+</body>
+</html>

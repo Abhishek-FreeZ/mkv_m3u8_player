@@ -1,1 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VideoStream Pro - Home</title>
+  <link href="https://vjs.zencdn.net/7.14.3/video-js.min.css" rel="stylesheet">
+  <script src="https://vjs.zencdn.net/7.14.3/video.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-logo">
+        <a href="index.html">🎬 VideoStream Pro</a>
+      </div>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="index.html" class="nav-link active">Home</a>
+        </li>
+        <li class="nav-item">
+          <a href="library.html" class="nav-link">Library</a>
+        </li>
+        <li class="nav-item">
+          <a href="upload.html" class="nav-link">Upload</a>
+        </li>
+      </ul>
+      <div class="hamburger">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </div>
+    </div>
+  </nav>
 
+  <main class="main-content">
+    <section class="hero">
+      <div class="hero-content">
+        <h1 class="hero-title">Welcome to VideoStream Pro</h1>
+        <p class="hero-subtitle">Upload, stream, and enjoy your MKV videos with advanced playback controls</p>
+        <div class="hero-buttons">
+          <a href="library.html" class="btn btn-primary">Browse Videos</a>
+          <a href="upload.html" class="btn btn-secondary">Upload Video</a>
+        </div>
+      </div>
+      <div class="hero-image">
+        <div class="video-placeholder">
+          <span class="play-icon">▶</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="features">
+      <div class="container">
+        <h2 class="section-title">Features</h2>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">📁</div>
+            <h3>MKV Support</h3>
+            <p>Upload and stream MKV files with automatic conversion to HLS format</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">⌨️</div>
+            <h3>Keyboard Controls</h3>
+            <p>Full keyboard shortcuts: Space (play/pause), M (mute), Arrow keys (volume/seek), F (fullscreen)</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📱</div>
+            <h3>Responsive Design</h3>
+            <p>Works seamlessly across desktop, tablet, and mobile devices</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🎛️</div>
+            <h3>Advanced Player</h3>
+            <p>Powered by Video.js with HLS streaming and adaptive bitrate</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="recent-videos">
+      <div class="container">
+        <h2 class="section-title">Recent Videos</h2>
+        <div id="recentVideosList" class="video-grid">
+          <div class="loading">Loading recent videos...</div>
+        </div>
+        <div class="text-center">
+          <a href="library.html" class="btn btn-outline">View All Videos</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&copy; 2024 VideoStream Pro. Built with Video.js</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+    // Load recent videos on home page
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const resp = await fetch('/videos');
+        const videos = await resp.json();
+        const recentList = document.getElementById('recentVideosList');
+        
+        if (videos.length === 0) {
+          recentList.innerHTML = '<div class="no-videos">No videos uploaded yet</div>';
+        } else {
+          const recentVideos = videos.slice(0, 6); // Show only first 6
+          recentList.innerHTML = recentVideos.map(video => `
+            <div class="video-card" onclick="playVideo('${video.url}', '${video.name}')">
+              <div class="video-thumbnail">
+                <span class="play-overlay">▶</span>
+              </div>
+              <div class="video-info">
+                <h3 class="video-title">${video.name}</h3>
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (error) {
+        document.getElementById('recentVideosList').innerHTML = '<div class="error">Error loading videos</div>';
+      }
+    });
+
+    function playVideo(url, name) {
+      sessionStorage.setItem('currentVideo', JSON.stringify({ url, name }));
+      window.location.href = 'player.html';
+    }
+  </script>
+</body>
+</html>

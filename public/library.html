@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VideoStream Pro - Library</title>
+  <link href="https://vjs.zencdn.net/7.14.3/video-js.min.css" rel="stylesheet">
+  <script src="https://vjs.zencdn.net/7.14.3/video.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-logo">
+        <a href="index.html">🎬 VideoStream Pro</a>
+      </div>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="index.html" class="nav-link">Home</a>
+        </li>
+        <li class="nav-item">
+          <a href="library.html" class="nav-link active">Library</a>
+        </li>
+        <li class="nav-item">
+          <a href="upload.html" class="nav-link">Upload</a>
+        </li>
+      </ul>
+      <div class="hamburger">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title">Video Library</h1>
+        <div class="page-actions">
+          <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search videos..." class="search-input">
+            <span class="search-icon">🔍</span>
+          </div>
+          <a href="upload.html" class="btn btn-primary">Upload New</a>
+        </div>
+      </div>
+
+      <div class="library-stats">
+        <div class="stat-card">
+          <span class="stat-number" id="totalVideos">0</span>
+          <span class="stat-label">Total Videos</span>
+        </div>
+      </div>
+
+      <div id="videosList" class="video-grid">
+        <div class="loading">Loading videos...</div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&copy; 2024 VideoStream Pro. Built with Video.js</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+    let allVideos = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadVideoLibrary();
+      setupSearch();
+    });
+
+    async function loadVideoLibrary() {
+      try {
+        const resp = await fetch('/videos');
+        allVideos = await resp.json();
+        document.getElementById('totalVideos').textContent = allVideos.length;
+        displayVideos(allVideos);
+      } catch (error) {
+        document.getElementById('videosList').innerHTML = '<div class="error">Error loading videos</div>';
+      }
+    }
+
+    function displayVideos(videos) {
+      const videosList = document.getElementById('videosList');
+      
+      if (videos.length === 0) {
+        videosList.innerHTML = `
+          <div class="no-videos">
+            <h3>No videos found</h3>
+            <p>Upload your first video to get started</p>
+            <a href="upload.html" class="btn btn-primary">Upload Video</a>
+          </div>
+        `;
+      } else {
+        videosList.innerHTML = videos.map(video => `
+          <div class="video-card" onclick="playVideo('${video.url}', '${video.name}')">
+            <div class="video-thumbnail">
+              <span class="play-overlay">▶</span>
+            </div>
+            <div class="video-info">
+              <h3 class="video-title">${video.name}</h3>
+              <div class="video-actions">
+                <button class="btn-icon" onclick="event.stopPropagation(); playVideo('${video.url}', '${video.name}')" title="Play">
+                  ▶
+                </button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function setupSearch() {
+      const searchInput = document.getElementById('searchInput');
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase();
+        const filteredVideos = allVideos.filter(video => 
+          video.name.toLowerCase().includes(query)
+        );
+        displayVideos(filteredVideos);
+      });
+    }
+
+    function playVideo(url, name) {
+      sessionStorage.setItem('currentVideo', JSON.stringify({ url, name }));
+      window.location.href = 'player.html';
+    }
+  </script>
+</body>
+</html>
